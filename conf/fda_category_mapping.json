@@ -1,0 +1,142 @@
+[
+  {
+    "raw_value": "Approved",
+    "normalized_status": "approved",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": "Covers: Approved, Approved/503A, Approved/OTC/503A, Approved (iPLEDGE), Approved/Supplement"
+  },
+  {
+    "raw_value": "Approved/503A",
+    "normalized_status": "approved",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": null
+  },
+  {
+    "raw_value": "Approved/OTC/503A",
+    "normalized_status": "approved",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": null
+  },
+  {
+    "raw_value": "Approved (iPLEDGE)",
+    "normalized_status": "approved",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": null
+  },
+  {
+    "raw_value": "Approved/Supplement",
+    "normalized_status": "approved",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": null
+  },
+  {
+    "raw_value": "503A Bulk",
+    "normalized_status": "503a_bulk",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": "Covers: 503A Bulk, 503A, 503A (not FDA approved)"
+  },
+  {
+    "raw_value": "503A",
+    "normalized_status": "503a_bulk",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": null
+  },
+  {
+    "raw_value": "503A (not FDA approved)",
+    "normalized_status": "503a_bulk",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": null
+  },
+  {
+    "raw_value": "503A Eval.",
+    "normalized_status": "503a_eval",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": null
+  },
+  {
+    "raw_value": "OTC/503A",
+    "normalized_status": "cosmetic_or_otc",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": "Covers: OTC/503A, OTC/Rx/503A, Cosmetic/503A, 503A/Cosmetic, GRAS/503A"
+  },
+  {
+    "raw_value": "OTC/Rx/503A",
+    "normalized_status": "cosmetic_or_otc",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": null
+  },
+  {
+    "raw_value": "Cosmetic/503A",
+    "normalized_status": "cosmetic_or_otc",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": null
+  },
+  {
+    "raw_value": "503A/Cosmetic",
+    "normalized_status": "cosmetic_or_otc",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": null
+  },
+  {
+    "raw_value": "GRAS/503A",
+    "normalized_status": "cosmetic_or_otc",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": null
+  },
+  {
+    "raw_value": "Supplement",
+    "normalized_status": "supplement",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": "Covers: Supplement, Supplement/503A"
+  },
+  {
+    "raw_value": "Supplement/503A",
+    "normalized_status": "supplement",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": null
+  },
+  {
+    "raw_value": "Schedule II/503A",
+    "normalized_status": "controlled",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": "Covers: Schedule II/503A, Schedule III/503A, Schedule IV/503A"
+  },
+  {
+    "raw_value": "Schedule III/503A",
+    "normalized_status": "controlled",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": null
+  },
+  {
+    "raw_value": "Schedule IV/503A",
+    "normalized_status": "controlled",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": null
+  },
+  {
+    "raw_value": "Investigational/503A",
+    "normalized_status": "investigational",
+    "confidence": "high",
+    "mapping_version": "1.0",
+    "notes": null
+  }
+]
