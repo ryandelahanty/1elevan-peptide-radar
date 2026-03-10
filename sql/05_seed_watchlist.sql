@@ -9,7 +9,8 @@
 
 MERGE INTO peptide_radar.silver.peptides AS target
 USING (
-  VALUES
+  SELECT col1 AS peptide_id, col2 AS canonical_name, col3 AS seed_source, col4 AS strategic_fit_score
+  FROM (VALUES
     ('0717fd030271b7c1f7eac2e81c57f82a6b664a1d527991a2061c99ea6e97f700', 'vasopressin', 'peptide_database_raw', 0.95),
     ('5b34c410a1475413467dda93e89e9e942e2524670330a462476a8739a261b324', 'desmopressin', 'peptide_database_raw', 0.8),
     ('ddd789a86b90b2f448e89ac8bb4b6a2c19d0e493d4ecfa3280ab8ddaa933f979', 'oxytocin', 'peptide_database_raw', 0.95),
@@ -46,7 +47,8 @@ USING (
     ('bb033597e4871a63951726b8a5df082f901c154e249f138996bbd873853916f8', 'pentagastrin', 'manual', 0.85),
     ('1cee77648a25946bd7bc543ab000d9c16b64110bb581e112656e018316a53857', 'sincalide', 'manual', 0.85),
     ('0d680028a80e049191ecd2001e970c5624aea38ecb1899b98ba6f1b2433e5fc6', 'secretin (human)', 'peptide_database_raw', 0.85)
-) AS src(peptide_id, canonical_name, seed_source, strategic_fit_score)
+  ) AS t(col1, col2, col3, col4)
+) AS src
 ON target.peptide_id = src.peptide_id
 WHEN MATCHED THEN UPDATE SET
   target.canonical_name      = src.canonical_name,
