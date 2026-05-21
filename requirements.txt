@@ -1,0 +1,14 @@
+# Peptide Radar v1 — requirements
+# These run INSIDE Databricks clusters — most are pre-installed.
+# Only add what the runtime doesn't include.
+
+# Pre-installed in all Databricks ML Runtime 15.x+:
+# pyspark, delta-spark, requests, boto3
+
+# Needed by ingestors
+requests>=2.31.0
+lxml>=4.9.0         # PDF/HTML parsing for FDA lists
+pdfplumber>=0.10.3  # FDA 503A PDF parsing
+
+# No anthropic SDK needed — all LLM calls via Databricks Model Serving REST API
+# No streamlit in the pipeline jobs — app.py is separate
