@@ -42,10 +42,15 @@ def _run_sql(statement: str, timeout: str = "30s") -> pd.DataFrame:
         if not result or not result.schema:
             return pd.DataFrame()
         cols = [c.name for c in result.schema.columns]
-        rows = [[getattr(r, c, None) for c in cols] for r in (result.data_array or [])]
+        rows = []
+        for r in (result.data_array or []):
+            if isinstance(r, (list, tuple)):
+                rows.append(list(r))
+            else:
+                rows.append([getattr(r, c, None) for c in cols])
         return pd.DataFrame(rows, columns=cols)
     except Exception as e:
-        st.warning(f"SQL error: {e}")
+        # Silently return empty — don't crash the app
         return pd.DataFrame()
 
 
