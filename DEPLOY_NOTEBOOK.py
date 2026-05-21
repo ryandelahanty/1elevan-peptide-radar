@@ -99,7 +99,7 @@ rows = [{
     "strategic_fit_score": float(score),
     "watchlist_active":    True,
     "last_updated":        now_ts,
-    "notes":               notes,
+    "indication_tags":     notes,   # map notes -> indication_tags (actual column name)
 } for name, src, score, notes in seed_data]
 
 seed_df = spark.createDataFrame(rows)
@@ -116,8 +116,16 @@ WHEN MATCHED THEN UPDATE SET
   target.strategic_fit_score = source.strategic_fit_score,
   target.watchlist_active    = TRUE,
   target.last_updated        = source.last_updated,
-  target.notes               = source.notes
-WHEN NOT MATCHED THEN INSERT *
+  target.indication_tags     = source.indication_tags
+WHEN NOT MATCHED THEN INSERT (
+  peptide_id, canonical_name, seed_source,
+  strategic_fit_score, watchlist_active,
+  last_updated, indication_tags
+) VALUES (
+  source.peptide_id, source.canonical_name, source.seed_source,
+  source.strategic_fit_score, source.watchlist_active,
+  source.last_updated, source.indication_tags
+)
 """)
 
 count = spark.sql("SELECT COUNT(*) AS n FROM peptide_radar.silver.peptides").first()["n"]
