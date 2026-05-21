@@ -1,6 +1,6 @@
 """
-1ElevanBio Peptide Radar — v1.0.1
-Databricks App (Streamlit) — NO personal API key, runs on DBU via Model Serving.
+1ElevanBio Peptide Radar -- v1.0.2
+Databricks App (Streamlit) -- NO personal API key, runs on DBU via Model Serving.
 """
 
 import os
@@ -13,7 +13,7 @@ import streamlit as st
 
 from databricks.sdk import WorkspaceClient
 
-APP_VERSION    = "peptide-radar-v1.0.1"
+APP_VERSION    = "peptide-radar-v1.0.2"
 WAREHOUSE_ID   = os.environ.get("WAREHOUSE_ID", "d6302cf341bcdde0")
 MODEL_ENDPOINT = os.environ.get("MODEL_ENDPOINT_NAME", "databricks-claude-sonnet-4-5")
 
@@ -24,7 +24,7 @@ BRAND = {
     "mint_bg":       "#F4F8F2",
 }
 
-# ── Clients ───────────────────────────────────────────────────────────────────
+# ── Clients ──────────────────────────────────────────────────────────────────
 
 @st.cache_resource
 def get_workspace_client():
@@ -49,8 +49,7 @@ def _run_sql(statement: str, timeout: str = "30s") -> pd.DataFrame:
             else:
                 rows.append([getattr(r, c, None) for c in cols])
         return pd.DataFrame(rows, columns=cols)
-    except Exception as e:
-        # Silently return empty — don't crash the app
+    except Exception:
         return pd.DataFrame()
 
 
@@ -211,7 +210,7 @@ if view == "Watchlist":
     else:
         c1, c2 = st.columns(2)
         min_score   = c1.slider("Min composite score", 0.0, 1.0, 0.0, 0.05)
-        alerts_only = c2.checkbox("Alerts only (≥ 0.72 or reg change)")
+        alerts_only = c2.checkbox("Alerts only (>= 0.72 or reg change)")
 
         disp = df[df["composite_score"].astype(float) >= min_score]
         if alerts_only:
@@ -257,7 +256,7 @@ elif view == "Signals":
     df   = load_recent_signals(days)
 
     if df.empty:
-        st.info("No signals yet — jobs collect Mon–Fri 06:00 UTC.")
+        st.info("No signals yet -- jobs collect Mon-Fri 06:00 UTC.")
     else:
         sev_f = st.multiselect("Severity", ["critical","high","medium","low"], default=["critical","high"])
         src_f = st.multiselect("Source", df["source_type"].dropna().unique().tolist())
@@ -294,9 +293,9 @@ elif view == "Weekly Digest":
         wk_df  = df[df["digest_week"] == sel]
         for _, row in wk_df.iterrows():
             with st.expander(
-                f"**{str(row['canonical_name']).title()}** — "
+                f"**{str(row['canonical_name']).title()}** -- "
                 f"{float(row.get('composite_score') or 0):.2f} "
-                f"(Δ {float(row.get('score_delta_7d') or 0):+.2f})"
+                f"(d {float(row.get('score_delta_7d') or 0):+.2f})"
             ):
                 if row.get("regulatory_status"):
                     st.markdown(f"**Regulatory:** {row['regulatory_status']}")
@@ -363,11 +362,11 @@ elif view == "System":
     with col1:
         st.markdown("**Job Schedule (UTC)**")
         for s, d in [
-            ("Mon 06:00", "FDA 503A/503B differ — $0"),
-            ("Tue 06:00", "ClinicalTrials poller — $0"),
-            ("Wed 06:00", "PubMed + bioRxiv — $0"),
-            ("Thu 06:00", "NIH RePORTER — $0"),
-            ("Fri 06:00", "Scorer + weekly digest — ~$0.15 max"),
+            ("Mon 06:00", "FDA 503A/503B differ -- $0"),
+            ("Tue 06:00", "ClinicalTrials poller -- $0"),
+            ("Wed 06:00", "PubMed + bioRxiv -- $0"),
+            ("Thu 06:00", "NIH RePORTER -- $0"),
+            ("Fri 06:00", "Scorer + weekly digest -- ~$0.15 max"),
         ]:
             st.markdown(f"- **{s}**: {d}")
         st.markdown(f"\n**LLM endpoint:** `{MODEL_ENDPOINT}` (DBU, no API key)")
