@@ -33,7 +33,10 @@ BRAND = {
     "orange":        "#E65100",
 }
 
-mlflow.openai.autolog()
+try:
+    mlflow.openai.autolog()
+except Exception:
+    pass
 
 
 # ── Clients (workspace oauth — no API key) ────────────────────────────────────
@@ -79,7 +82,7 @@ def load_watchlist() -> pd.DataFrame:
             COALESCE(o.convergence_count_30d, 0) AS convergence_count_30d,
             COALESCE(o.regulatory_change,  FALSE) AS regulatory_change,
             COALESCE(o.alert_threshold_hit,FALSE) AS alert_threshold_hit,
-            p.notes
+            p.indication_tags
         FROM peptide_radar.silver.peptides p
         LEFT JOIN (
             SELECT *, ROW_NUMBER() OVER (PARTITION BY peptide_id ORDER BY score_date DESC) AS rn
@@ -244,8 +247,8 @@ if view == "Watchlist":
                 c3.metric("IP Space",   f"{float(row.get('ip_whitespace_score') or 0):.2f}")
                 c4.metric("Supply",     f"{float(row.get('supply_score')        or 0):.2f}")
                 c5.metric("Conv. 30d",  str(row.get("convergence_count_30d")    or 0))
-                if row.get("notes"):
-                    st.caption(row["notes"])
+                if row.get("indication_tags"):
+                    st.caption(row["indication_tags"])
 
         st.download_button(
             "Download CSV", disp.to_csv(index=False).encode(),
