@@ -1,55 +1,38 @@
 """
-1ElevanBio Peptide Radar — v1.0.0
+1ElevanBio Peptide Radar — v1.0.1
 Databricks App (Streamlit) — NO personal API key, runs on DBU via Model Serving.
-Mirrors compound-intelligence-v2 deployment pattern.
 """
 
 import os
 import json
-import time
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict
 
 import pandas as pd
 import streamlit as st
-import mlflow
 
 from databricks.sdk import WorkspaceClient
-from databricks_openai import DatabricksOpenAI
 
-APP_VERSION      = "peptide-radar-v1.0.0"
-MODEL_ENDPOINT   = os.environ.get("MODEL_ENDPOINT_NAME", "databricks-claude-sonnet-4-5")
-WAREHOUSE_ID     = os.environ.get("WAREHOUSE_ID", "d6302cf341bcdde0")
+APP_VERSION    = "peptide-radar-v1.0.1"
+WAREHOUSE_ID   = os.environ.get("WAREHOUSE_ID", "d6302cf341bcdde0")
+MODEL_ENDPOINT = os.environ.get("MODEL_ENDPOINT_NAME", "databricks-claude-sonnet-4-5")
 
 BRAND = {
     "primary_green": "#299143",
-    "bright_green":  "#6CBE4A",
     "deep_green":    "#2E7D32",
     "charcoal":      "#2A2A2A",
-    "mid_gray":      "#8A8A8A",
     "mint_bg":       "#F4F8F2",
-    "gold":          "#C4B26A",
-    "red":           "#C62828",
-    "orange":        "#E65100",
 }
 
-try:
-    mlflow.openai.autolog()
-except Exception:
-    pass
-
-
-# ── Clients (workspace oauth — no API key) ────────────────────────────────────
+# ── Clients ───────────────────────────────────────────────────────────────────
 
 @st.cache_resource
-def get_clients():
-    w      = WorkspaceClient()
-    client = DatabricksOpenAI(client=w)
-    return w, client
+def get_workspace_client():
+    return WorkspaceClient()
 
 
 def _run_sql(statement: str, timeout: str = "30s") -> pd.DataFrame:
-    w, _ = get_clients()
+    w = get_workspace_client()
     try:
         result = w.statement_execution.execute_statement(
             warehouse_id=WAREHOUSE_ID,
@@ -59,8 +42,8 @@ def _run_sql(statement: str, timeout: str = "30s") -> pd.DataFrame:
         if not result or not result.schema:
             return pd.DataFrame()
         cols = [c.name for c in result.schema.columns]
-        data = [[getattr(r, c, None) for c in cols] for r in (result.data_array or [])]
-        return pd.DataFrame(data, columns=cols)
+        rows = [[getattr(r, c, None) for c in cols] for r in (result.data_array or [])]
+        return pd.DataFrame(rows, columns=cols)
     except Exception as e:
         st.warning(f"SQL error: {e}")
         return pd.DataFrame()
@@ -131,13 +114,13 @@ def load_costs() -> dict:
         return {}
     r = df.iloc[0]
     return {
-        "total_usd":    float(r["total_usd"]    or 0),
-        "total_tokens": int(r["total_tokens"]   or 0),
-        "total_calls":  int(r["total_calls"]    or 0),
+        "total_usd":    float(r.get("total_usd")    or 0),
+        "total_tokens": int(r.get("total_tokens")   or 0),
+        "total_calls":  int(r.get("total_calls")    or 0),
     }
 
 
-# ── LLM chat (DBU model serving) ─────────────────────────────────────────────
+# ── LLM chat ─────────────────────────────────────────────────────────────────
 
 SYSTEM_PROMPT = """
 You are 1ElevanBio's Peptide Radar intelligence assistant.
@@ -145,7 +128,7 @@ You monitor 36 peptides across FDA 503A/503B lists, ClinicalTrials.gov,
 PubMed/bioRxiv, and NIH RePORTER for compounding opportunity signals.
 
 Scoring: Regulatory 30% | Evidence 25% | IP Whitespace 20% | Supply 15% | Fit 10%
-Alert thresholds: composite ≥ 0.72, delta_7d ≥ 0.15, convergence ≥ 3 sources.
+Alert thresholds: composite >= 0.72, delta_7d >= 0.15, convergence >= 3 sources.
 
 Answer questions about watchlist scores, signals, and opportunities.
 Be specific. Cite scores and sources. Do not fabricate data.
@@ -153,13 +136,15 @@ Be specific. Cite scores and sources. Do not fabricate data.
 
 
 def run_chat(history: List[Dict], question: str, context: str = "") -> str:
-    _, client = get_clients()
-    msgs = (
-        [{"role": "system", "content": SYSTEM_PROMPT}]
-        + history
-        + [{"role": "user", "content": question + context}]
-    )
+    w = get_workspace_client()
     try:
+        from databricks_openai import DatabricksOpenAI
+        client = DatabricksOpenAI(client=w)
+        msgs = (
+            [{"role": "system", "content": SYSTEM_PROMPT}]
+            + history
+            + [{"role": "user", "content": question + context}]
+        )
         resp = client.chat.completions.create(
             model=MODEL_ENDPOINT,
             messages=msgs,
@@ -181,10 +166,11 @@ st.markdown(f"""
     background: linear-gradient(90deg, {BRAND['deep_green']} 0%, {BRAND['primary_green']} 100%);
     padding: 1.2rem 1.5rem; border-radius: 8px; color: white; margin-bottom: 1rem;
 }}
+* {{ color: inherit; }}
 </style>
 <div class="radar-header">
-  <h2 style="margin:0">📡 Peptide Radar</h2>
-  <span style="opacity:0.85;font-size:0.9em;">
+  <h2 style="margin:0;color:white;">📡 Peptide Radar</h2>
+  <span style="opacity:0.85;font-size:0.9em;color:white;">
     FDA · ClinicalTrials · PubMed · NIH RePORTER &nbsp;|&nbsp;
     36 peptides &nbsp;|&nbsp; {APP_VERSION}
   </span>
@@ -216,11 +202,11 @@ if view == "Watchlist":
     df = load_watchlist()
 
     if df.empty:
-        st.info("No data yet. Run DEPLOY_NOTEBOOK.py to seed and start jobs.")
+        st.info("No data yet. Run DEPLOY_NOTEBOOK to seed the watchlist and start jobs.")
     else:
         c1, c2 = st.columns(2)
-        min_score        = c1.slider("Min composite score", 0.0, 1.0, 0.0, 0.05)
-        alerts_only      = c2.checkbox("Alerts only (≥ 0.72 or reg change)")
+        min_score   = c1.slider("Min composite score", 0.0, 1.0, 0.0, 0.05)
+        alerts_only = c2.checkbox("Alerts only (≥ 0.72 or reg change)")
 
         disp = df[df["composite_score"].astype(float) >= min_score]
         if alerts_only:
@@ -229,26 +215,28 @@ if view == "Watchlist":
                 (disp["regulatory_change"] == True)
             ]
 
-        SEV = {"critical": "🔴", "high": "🟠", "medium": "🔵", "low": "🟢"}
         for _, row in disp.iterrows():
             comp  = float(row.get("composite_score") or 0)
             delta = float(row.get("score_delta_7d")  or 0)
             badges = ""
-            if row.get("regulatory_change"):  badges += "🚨 REG CHANGE &nbsp;"
+            if row.get("regulatory_change"):   badges += "🚨 REG CHANGE &nbsp;"
             if row.get("alert_threshold_hit"): badges += "⚡ ELEVATED &nbsp;"
             if delta >  0.15: badges += f"📈 +{delta:.2f} &nbsp;"
             elif delta < -0.10: badges += f"📉 {delta:.2f} &nbsp;"
 
-            with st.expander(f"**{row['canonical_name'].title()}** &nbsp; {comp:.2f} &nbsp; {badges}",
-                             expanded=bool(row.get("alert_threshold_hit") or row.get("regulatory_change"))):
+            with st.expander(
+                f"**{str(row['canonical_name']).title()}** &nbsp; {comp:.2f} &nbsp; {badges}",
+                expanded=bool(row.get("alert_threshold_hit") or row.get("regulatory_change"))
+            ):
                 c1, c2, c3, c4, c5 = st.columns(5)
                 c1.metric("Regulatory", f"{float(row.get('regulatory_score')    or 0):.2f}")
                 c2.metric("Evidence",   f"{float(row.get('evidence_score')      or 0):.2f}")
                 c3.metric("IP Space",   f"{float(row.get('ip_whitespace_score') or 0):.2f}")
                 c4.metric("Supply",     f"{float(row.get('supply_score')        or 0):.2f}")
                 c5.metric("Conv. 30d",  str(row.get("convergence_count_30d")    or 0))
-                if row.get("indication_tags"):
-                    st.caption(row["indication_tags"])
+                tags = row.get("indication_tags")
+                if tags:
+                    st.caption(str(tags))
 
         st.download_button(
             "Download CSV", disp.to_csv(index=False).encode(),
@@ -294,12 +282,12 @@ elif view == "Weekly Digest":
     df = load_weekly_digest()
 
     if df.empty:
-        st.info("No digest yet. Job 5 runs Fridays 06:00 UTC — only calls LLM if peptide ≥ 0.72.")
+        st.info("No digest yet. Job 5 runs Fridays 06:00 UTC.")
     else:
-        weeks   = df["digest_week"].dropna().unique().tolist()
-        sel     = st.selectbox("Week", weeks)
-        week_df = df[df["digest_week"] == sel]
-        for _, row in week_df.iterrows():
+        weeks  = df["digest_week"].dropna().unique().tolist()
+        sel    = st.selectbox("Week", weeks)
+        wk_df  = df[df["digest_week"] == sel]
+        for _, row in wk_df.iterrows():
             with st.expander(
                 f"**{str(row['canonical_name']).title()}** — "
                 f"{float(row.get('composite_score') or 0):.2f} "
@@ -308,7 +296,7 @@ elif view == "Weekly Digest":
                 if row.get("regulatory_status"):
                     st.markdown(f"**Regulatory:** {row['regulatory_status']}")
                 if row.get("top_signal_summary"):
-                    st.markdown(row["top_signal_summary"])
+                    st.markdown(str(row["top_signal_summary"]))
 
 
 # ── ASK RADAR ────────────────────────────────────────────────────────────────
@@ -318,8 +306,8 @@ elif view == "Ask Radar":
     st.caption("Chat with your monitoring data. Powered by Databricks Model Serving (DBU).")
 
     if "radar_history" not in st.session_state:
-        st.session_state.radar_history  = []
-        st.session_state.radar_display  = []
+        st.session_state.radar_history = []
+        st.session_state.radar_display = []
 
     for msg in st.session_state.radar_display:
         with st.chat_message(msg["role"]):
@@ -333,7 +321,8 @@ elif view == "Ask Radar":
             context = f"\n\n[Current top 5]\n{top5}"
 
         st.session_state.radar_display.append({"role":"user","content":q})
-        with st.chat_message("user"):    st.markdown(q)
+        with st.chat_message("user"):
+            st.markdown(q)
         with st.chat_message("assistant"):
             with st.spinner("Querying Radar data..."):
                 answer = run_chat(st.session_state.radar_history, q, context)
@@ -357,23 +346,23 @@ elif view == "System":
     wl  = load_watchlist()
     sig = load_recent_signals(30)
     dig = load_weekly_digest()
-    c1,c2,c3,c4 = st.columns(4)
+    costs = load_costs()
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("Peptides tracked", len(wl)  if not wl.empty  else 0)
     c2.metric("Signals (30d)",    len(sig) if not sig.empty else 0)
     c3.metric("Digest items",     len(dig) if not dig.empty else 0)
-    c4.metric("LLM calls/month",  costs.get("total_calls",0))
+    c4.metric("LLM calls/month",  costs.get("total_calls", 0))
 
     st.divider()
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("**Job Schedule (UTC)**")
-        for s,d in [
-            ("Mon 06:00","FDA 503A/503B differ — $0"),
-            ("Tue 06:00","ClinicalTrials poller — $0"),
-            ("Wed 06:00","PubMed + bioRxiv — $0"),
-            ("Thu 06:00","NIH RePORTER — $0"),
-            ("Fri 06:00","Scorer + weekly digest — ~$0.15 max"),
-            ("Monthly (manual)","Deep brief — ~$0.50"),
+        for s, d in [
+            ("Mon 06:00", "FDA 503A/503B differ — $0"),
+            ("Tue 06:00", "ClinicalTrials poller — $0"),
+            ("Wed 06:00", "PubMed + bioRxiv — $0"),
+            ("Thu 06:00", "NIH RePORTER — $0"),
+            ("Fri 06:00", "Scorer + weekly digest — ~$0.15 max"),
         ]:
             st.markdown(f"- **{s}**: {d}")
         st.markdown(f"\n**LLM endpoint:** `{MODEL_ENDPOINT}` (DBU, no API key)")
@@ -381,4 +370,4 @@ elif view == "System":
         st.markdown("**Scoring weights**")
         st.json({"regulatory":0.30,"evidence":0.25,"ip":0.20,"supply":0.15,"fit":0.10})
         st.markdown("**Alert thresholds**")
-        st.json({"composite":"≥ 0.72","delta_7d":"≥ 0.15","convergence":"≥ 3 sources","regulatory_change":"always"})
+        st.json({"composite":">=0.72","delta_7d":">=0.15","convergence":">=3 sources"})
