@@ -2,12 +2,20 @@ command:
   - streamlit
   - run
   - app.py
-  - --server.port=8080
-  - --server.address=0.0.0.0
-  - --server.headless=true
+  - --server.port
+  - "8000"
+  - --server.address
+  - "0.0.0.0"
 
 env:
   - name: MODEL_ENDPOINT_NAME
-    value: "databricks-claude-sonnet-4-5"
+    valueFrom: "llm"
   - name: WAREHOUSE_ID
     value: "d6302cf341bcdde0"
+
+resources:
+  - name: "llm"
+    description: "Databricks-hosted Claude Sonnet 4.6 pay-per-token endpoint"
+    serving_endpoint:
+      name: databricks-claude-sonnet-4-6
+      permission: "CAN_QUERY"
